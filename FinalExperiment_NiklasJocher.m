@@ -16,6 +16,39 @@ numStimuliPerBlock = 800; %with 800 stimuli each
 samplesPerTone = round(toneDur * Fs);
 tones = cellfun(@(f) sin(2 * pi * f * (0:samplesPerTone-1) / Fs), num2cell(freqs), 'UniformOutput', false);
 
+%% Create random sequnece 
+% Randomized Tone sequence with omissions 
+seq = repelem(1:4, (1 - 0.1) * numStimuliPerBlock / 4);
+seq = [seq(randperm(numel(seq))), zeros(1, 0.1 * numStimuliPerBlock)];
+seq = seq(randperm(numel(seq)));
+
+%% Instructions for participants 
+Screen('Preference', 'SkipSyncTests', 1);
+[win, rect] = Screen('OpenWindow', 0, 128, [0 0 640 416]);
+Screen('TextSize', win, 50);
+xCenter = rect(3) / 2; yCenter = rect(4) / 2;
+
+instructions = [ 
+    'Welcome to our experiment.\n\n', ...
+    'You will be listening to tones.\n\n', ...
+    'Fixate your eyes on the fixation cross\n\n', ...
+    'in the middle of the screen.\n\n', ...
+    'Press any key to begin.' 
+];
+
+% Text size and color: make color white 
+Screen('TextSize', win, 24); 
+textColor = [255, 255, 255];
+
+% Show instructions on the screen 
+DrawFormattedText(win, instructions, 'center', 'center', textColor);
+Screen('Flip', win);
+
+% participant can press a key to continue when done with reading the 
+% instructions 
+KbStrokeWait;
+Screen('CloseAll') 
+
 %% Initialize PTB to actually play and display stuff and run the entire thing
 
 InitializePsychSound;
@@ -31,11 +64,6 @@ try
         %Display a fixation cross (big plus)
         DrawFormattedText(win, '+', 'center', 'center', 255);
         Screen('Flip', win);
-
-        % Randomized Tone sequence with omissions 
-        seq = repelem(1:4, (1 - 0.1) * numStimuliPerBlock / 4);
-        seq = [seq(randperm(numel(seq))), zeros(1, 0.1 * numStimuliPerBlock)];
-        seq = seq(randperm(numel(seq)));
 
         % Play stimuli
         for s = seq
