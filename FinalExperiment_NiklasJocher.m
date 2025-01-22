@@ -2,7 +2,7 @@
 %% Some Info on what's going on here
 % It's an omission paradigm. You listen to pure tones and some (10%) are
 % omitted. There are four tones (200, 431, 928 and 2000 Hz) at a sampling
-% rate of 3 Hz. The priginal experiment had 8 blocks...I'll just use 4 and
+% rate of 3 Hz. The original experiment had 8 blocks...I'll just use 4 and
 % reduce the amount of stimuli per block to 800. 
 
 %% Create Parameters (aka frequencies, number of blocks, stimuli per block etc)
@@ -13,6 +13,7 @@ toneISI = 1 / 3; %time between the onset of one tone and the onset of the next. 
 numBlocks = 4; %4 Blocks 
 numStimuliPerBlock = 800; %with 800 stimuli each
 conditions = {'RR','OR', 'MM', 'MP'}; %four conditions in the experiment 
+omitProb = 0.1; 
 
 %% Create the tones
 samplesPerTone = round(toneDur * Fs);
@@ -47,7 +48,7 @@ textColor = [255, 255, 255];
 
 % Show instructions on the screen 
 DrawFormattedText(win, instructions, 'center', 'center', textColor);
-Screen('Flip', win);
+Screen('Flip', win); 
 
 % participant can press a key to continue when done with reading the 
 % instructions 
@@ -81,23 +82,29 @@ try
             nextTone = find(rand <= cumulativeProb, 1); % Determine the next tone based on random number
             seq(i) = nextTone; % Assign the next tone to the sequence
         end
-        %
+        
+        omitTrials = rand(1, numStimuliPerBlock) < omitProb;
 
-        % Play the tones
-        for s = seq
-            if s > 0
-                PsychPortAudio('FillBuffer', pahandle, tones{s});
+        % Play stimuli
+        for i = 1:numStimuliPerBlock
+            if ~omitTrials(i) && seq(i) > 0
+                PsychPortAudio('FillBuffer', pahandle, tones{seq(i)});
                 PsychPortAudio('Start', pahandle, 1, 0, 1);
                 WaitSecs(toneDur); PsychPortAudio('Stop', pahandle);
             end
-            WaitSecs(toneISI - toneDur * (s > 0));
+            WaitSecs(toneISI - toneDur * (~omitTrials(i) && seq(i) > 0));
         end
 
         % Remove fixation cross between blocks
         Screen('Flip', win);
         fprintf('End of block %d. Press any key to continue.\n', block);
-        KbStrokeWait;
+        KbWait;
     end
+
+        % Remove fixation cross between blocks
+        Screen('Flip', win);
+        fprintf('End of block %d. Press any key to continue.\n', block);
+        KbStrokeWait;
 catch ME
     Screen('CloseAll');
     PsychPortAudio('Close', pahandle);
