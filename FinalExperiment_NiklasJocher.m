@@ -6,16 +6,20 @@
 % reduce the amount of stimuli per block to 800. 
 
 %% Create Parameters (aka frequencies, number of blocks, stimuli per block etc)
-Fs = 44100; toneDur = 0.1; 
-freqs = [200, 431, 928, 2000];
+Fs = 44100; %Sampling rate
+toneDur = 0.1; 
+freqs = [200, 431, 928, 2000]; % frequencies of the four pure tones 
 toneISI = 1 / 3; %time between the onset of one tone and the onset of the next. since it's 3Hz -> 1/3
 numBlocks = 4; %4 Blocks 
 numStimuliPerBlock = 800; %with 800 stimuli each
-conditions = {'RR','OR', 'MM', 'MP'};
+conditions = {'RR','OR', 'MM', 'MP'}; %four conditions in the experiment 
 
 %% Create the tones
 samplesPerTone = round(toneDur * Fs);
 tones = cellfun(@(f) sin(2 * pi * f * (0:samplesPerTone-1) / Fs), num2cell(freqs), 'UniformOutput', false);
+% Anonymous function creates sin wave for a frequency (f)
+% (0:smaplePerTone-1) / Fs) represents the time in seconds 
+% sin(2 * pi * f * t) creates the sine wave for that frequency 
 
 %% Define transition probabilities
 transition.RR = [0.25, 0.25, 0.25, 0.25; 0.25, 0.25, 0.25, 0.25; 0.25, 0.25, 0.25, 0.25; 0.25, 0.25, 0.25, 0.25]
@@ -68,12 +72,16 @@ try
         Screen('Flip', win);
 
        % Generate stimulus sequence based on the transition matrix
-        transMatrix = transition.(condition);
-        seq = zeros(1, numStimuliPerBlock);
-        seq(1) = randi(4); % Random start
+        transMatrix = transition.(condition); % tell it where to find transition matrices
+        seq = zeros(1, numStimuliPerBlock); %array for sequence of tones per block
+        seq(1) = randi(4); % Choses random starting tone from the 4 pure tones
         for i = 2:numStimuliPerBlock
-            seq(i) = find(rand <= cumsum(transMatrix(seq(i-1), :)), 1);
+            currentRow = transMatrix(seq(i-1), :); % Get transition probabilities for the current tone
+            cumulativeProb = cumsum(currentRow); % Compute probabilities
+            nextTone = find(rand <= cumulativeProb, 1); % Determine the next tone based on random number
+            seq(i) = nextTone; % Assign the next tone to the sequence
         end
+        %
 
         % Play the tones
         for s = seq
